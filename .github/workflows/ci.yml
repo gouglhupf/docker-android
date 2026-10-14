@@ -18,9 +18,6 @@ jobs:
   build_and_test:
     needs: generate_matrix
     runs-on: ubuntu-24.04
-    container:
-      image: docker://docker:stable-git
-      options: --name=runner
     strategy:
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
     steps:

@@ -107,8 +107,15 @@ if [ "$build" = true ]; then
 fi
 
 ci=${CI:-false}
-if [ "$ci" = true ]; then
-  echo "Running in CI"
+if [ -n "$GITHUB_WORKSPACE" ] && [ "$CI_INNER_CONTAINER" != "true" ]; then
+  # Running on a GitHub Actions runner host: docker daemon runs on the same
+  # machine, so the workspace can be bind-mounted directly.
+  echo "Running on CI runner host"
+  volume_options="-v ${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE} --workdir ${GITHUB_WORKSPACE}"
+elif [ "$ci" = true ]; then
+  # Running inside a CI job container (docker:stable-git style) using the
+  # host docker daemon: reuse the job container volumes.
+  echo "Running in CI container"
   volume_options="--volumes-from runner --workdir $GITHUB_WORKSPACE"
 else
   echo "Not running in CI"
