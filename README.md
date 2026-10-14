@@ -65,7 +65,7 @@ jobs:
   my_android_job:
     runs-on: ubuntu-24.04 # Works also with self hosted runner supporting docker
     container:
-      image: docker://fabernovel/android:api-29-v1.1.0
+      image: docker://ghcr.io/gouglhupf/android:api-37.2-gcloud-v1.12.0
 
   steps:
     - name: Checkout
@@ -94,7 +94,7 @@ jobs:
 ```
 You can also use the provided Github Action.
 However, caching won't work and you can expect longer build times.
-`docker-android-tag` should be one of the tags found in [Fabernovel Hub Registry Tags](https://hub.docker.com/r/fabernovel/android/tags):
+`docker-android-tag` should be one of the tags found in [GitHub Container Registry Tags](https://github.com/gouglhupf/docker-android/pkgs/container/android):
 ```yml
 name: GitHub Action sample
 
@@ -121,13 +121,13 @@ jobs:
 ```
 
 ## 📦 Container Registry
-docker-android images are hosted on [DockerHub](https://hub.docker.com/r/fabernovel/android).
+docker-android images are hosted on [GitHub Container Registry](https://github.com/gouglhupf/docker-android/pkgs/container/android) (`ghcr.io/gouglhupf/android`).
 
 ## 🔤 Naming
 We provide stable and snapshot variants for latest Android API levels, including or not native SDK.
 We use the following tagging policy:
 `API-NDK-GCLOUD-VERSION`
-* `API` the Android API to use, like `api-28`, `api-29`
+* `API` the Android API to use, like `api-37.2`, `api-36` (since API 36.1, Google releases minor SDK versions, e.g. `android-37.2`)
 * `NDK` is the presence or not of the [Android NDK](https://developer.android.com/ndk) in the image
 * `GCLOUD` is the presence or not of the [Google Cloud SDK](https://cloud.google.com/sdk) in the image. (the gcloud sdk is needed for Firebase Test Lab for example).
 * `VERSION` is the image version. Check [Versions](https://github.com/faberNovel/docker-android/tree/main#versions)

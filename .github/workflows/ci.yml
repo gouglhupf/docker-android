@@ -7,19 +7,17 @@ on:
       - 'release/**'
 jobs:
   generate_matrix:
-    runs-on: ubuntu-22.04
-    container:
-      image: docker://alpine/git:v2.36.3
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.read.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - id: read
         run: .ci/extract_github_action_matrix_as.sh matrix
   build_and_test:
     needs: generate_matrix
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
       image: docker://docker:stable-git
       options: --name=runner
@@ -27,7 +25,7 @@ jobs:
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build and test
-        run: ./ci_cd.sh --build --test --android-api ${{ matrix.android_api.api }} --build-tools ${{ matrix.android_api.build_tools }} ${{ matrix.android_ndk }} {{ matrix.gcloud }}
+        run: ./ci_cd.sh --build --test --android-api ${{ matrix.android_api.api }} --build-tools ${{ matrix.android_api.build_tools }} ${{ matrix.android_ndk }} ${{ matrix.gcloud }}
