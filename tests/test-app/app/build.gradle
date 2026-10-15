@@ -1,5 +1,3 @@
-import static com.android.build.api.dsl.SdkVersion.release
-
 apply plugin: 'com.android.application'
 
 def compileSdkParts = (System.getenv("COMPILE_SDK_VERSION") ?: "35").tokenize('.')
@@ -22,15 +20,7 @@ android {
     defaultConfig {
         applicationId "com.fabernovel.testapp"
         minSdk System.getenv("MIN_SDK_VERSION").toInteger()
-        if (targetSdkParts.size() > 1) {
-            targetSdk {
-                version = release(targetSdkParts[0].toInteger()) {
-                    minorApiLevel = targetSdkParts[1].toInteger()
-                }
-            }
-        } else {
-            targetSdk targetSdkParts[0].toInteger()
-        }
+        targetSdk targetSdkParts[0].toInteger()
         versionCode 1
         versionName "1.0"
 
