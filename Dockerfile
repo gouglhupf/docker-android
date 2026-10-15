@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:24.04
 
 # Required for Jenv
 SHELL ["/bin/bash", "-c"]
@@ -107,21 +107,24 @@ RUN if [ "$gcloud" = true ] ; \
   fi
 
 ## Install Android SDK
-ARG sdk_version=commandlinetools-linux-6200805_latest.zip
+ARG sdk_version=commandlinetools-linux-16111833_latest.zip
 ARG android_home=/opt/android/sdk
-ARG android_api=android-36
-ARG android_build_tools=36.0.0
+ARG android_api=android-37.2
+ARG android_build_tools=37.0.0
 ARG android_ndk=false
 ARG ndk_version=26.1.10909125
 ARG cmake=3.22.1
-RUN mkdir -p ${android_home} && \
+RUN mkdir -p ${android_home}/cmdline-tools && \
     wget --quiet --output-document=/tmp/${sdk_version} https://dl.google.com/android/repository/${sdk_version} && \
-    unzip -q /tmp/${sdk_version} -d ${android_home} && \
+    unzip -q /tmp/${sdk_version} -d ${android_home}/cmdline-tools && \
+    if [ -d ${android_home}/cmdline-tools/cmdline-tools ]; then \
+      mv ${android_home}/cmdline-tools/cmdline-tools ${android_home}/cmdline-tools/latest ; \
+    fi && \
     rm /tmp/${sdk_version}
 
 # Set environmental variables
 ENV ANDROID_HOME ${android_home}
-ENV PATH=${ANDROID_HOME}/emulator:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${ANDROID_HOME}/platform-tools:${PATH}
+ENV PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/emulator:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${ANDROID_HOME}/platform-tools:${PATH}
 
 RUN mkdir ~/.android && echo '### User Sources for Android SDK Manager' > ~/.android/repositories.cfg
 

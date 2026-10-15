@@ -67,7 +67,9 @@ if [ $large_test = true ]; then
 fi
 
 # Compute image tag
-org_name="fabernovel"
+registry="${REGISTRY:-ghcr.io}"
+org_name="${IMAGE_ORG:-gouglhupf}"
+image_repo="${IMAGE_REPO:-android}"
 simple_image_name="api-$android_api"
 if [ "$gcloud" = true ]; then
   simple_image_name="$simple_image_name-gcloud"
@@ -83,7 +85,7 @@ if [ -n "$RELEASE_NAME" ]; then
   simple_image_name="$simple_image_name-$RELEASE_NAME"
 fi
 
-full_image_name="$org_name/android:$simple_image_name"
+full_image_name="${registry}/${org_name}/${image_repo}:${simple_image_name}"
 
 # CI business
 tasks=0
@@ -105,8 +107,15 @@ if [ "$build" = true ]; then
 fi
 
 ci=${CI:-false}
-if [ "$ci" = true ]; then
-  echo "Running in CI"
+if [ -n "$GITHUB_WORKSPACE" ] && [ "$CI_INNER_CONTAINER" != "true" ]; then
+  # Running on a GitHub Actions runner host: docker daemon runs on the same
+  # machine, so the workspace can be bind-mounted directly.
+  echo "Running on CI runner host"
+  volume_options="-v ${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE} --workdir ${GITHUB_WORKSPACE}"
+elif [ "$ci" = true ]; then
+  # Running inside a CI job container (docker:stable-git style) using the
+  # host docker daemon: reuse the job container volumes.
+  echo "Running in CI container"
   volume_options="--volumes-from runner --workdir $GITHUB_WORKSPACE"
 else
   echo "Not running in CI"
@@ -149,13 +158,19 @@ fi
 if [ "$deploy" = true ]; then
   tasks=$((tasks+1))
   echo "Deploy image $full_image_name"
-  echo "$DOCKERHUB_TOKEN" | docker login --username botfabernovel --password-stdin
+  if [ -n "$REGISTRY_TOKEN" ]; then
+    echo "$REGISTRY_TOKEN" | docker login "$registry" --username "${REGISTRY_USER:-$USER}" --password-stdin
+  else
+    echo "Missing REGISTRY_TOKEN to deploy $full_image_name"
+    exit 1
+  fi
   docker push $full_image_name
 fi
 
 if [ "$desc" = true ]; then
   tasks=$((tasks+1))
   echo "Generating image description $simple_image_name.md"
+  mkdir -p desc/output
   docker run \
     $volume_options \
     --rm $full_image_name \

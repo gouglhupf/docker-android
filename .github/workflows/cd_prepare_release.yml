@@ -3,22 +3,21 @@ on:
   push:
     branches:
     - 'release/**'
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
   generate_matrix:
-    runs-on: ubuntu-22.04
-    container:
-      image: docker://alpine/git:v2.36.3
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.read.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - id: read
         run: .ci/extract_github_action_matrix_as.sh matrix
   job_compute_release_name:
-    runs-on: ubuntu-22.04
-    container:
-      image: docker://alpine/git:v2.36.3
+    runs-on: ubuntu-24.04
     outputs:
       release_name: ${{ steps.step_compute_release_name.outputs.release_name }}
     steps:
@@ -28,19 +27,16 @@ jobs:
         run: |
           release_name=${GIT_REF#refs/heads/release/}
           echo "Release name=$release_name"
-          echo "::set-output name=release_name::$release_name"
+          echo "release_name=$release_name" >> "$GITHUB_OUTPUT"
 
   job_build_test_and_generate_desc:
     needs: [job_compute_release_name, generate_matrix]
-    runs-on: ubuntu-22.04
-    container:
-      image: docker://docker:stable-git
-      options: --name=runner
+    runs-on: ubuntu-24.04
     strategy:
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build test deploy describe image
         env:
@@ -48,40 +44,61 @@ jobs:
         run: ./ci_cd.sh --build --test --desc --android-api ${{ matrix.android_api.api }} --build-tools ${{ matrix.android_api.build_tools }} ${{ matrix.android_ndk }} ${{ matrix.gcloud }}
 
       - name: Upload image description
-        uses: actions/upload-artifact@v2-preview
+        uses: actions/upload-artifact@v4
         with:
           path: desc/output/*.md
           name: images_description
 
   job_create_pr:
     needs: [job_compute_release_name, job_build_test_and_generate_desc]
-    runs-on: ubuntu-22.04
-    container:
-      image: docker://alpine/git:v2.36.3
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_NAME: ${{ needs.job_compute_release_name.outputs.release_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Generate changelog file
-        uses: faberNovel/github-changelog-generator-action@v1.0.0-alpha02
+        uses: actions/checkout@v4
         with:
-          options: --token ${{ secrets.GITHUB_TOKEN }} --future-release ${{ needs.job_compute_release_name.outputs.release_name }}
+          fetch-depth: 0
 
       - name: Fetch images description
-        uses: actions/download-artifact@v2-preview
+        uses: actions/download-artifact@v4
         with:
           name: images_description
           path: images_description
 
+      - name: Generate changelog file
+        run: |
+          previous_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          {
+            echo "# Changelog"
+            echo
+            echo "## [${RELEASE_NAME}](https://github.com/${GH_REPO}/tree/${RELEASE_NAME}) ($(date -u +%F))"
+            echo
+            if [ -n "$previous_tag" ]; then
+              echo "[Full Changelog](https://github.com/${GH_REPO}/compare/${previous_tag}...${RELEASE_NAME})"
+              echo
+            fi
+            if [ -n "$previous_tag" ]; then
+              git log --no-merges --format='- %s' "${previous_tag}..HEAD"
+            else
+              git log --no-merges --format='- %s'
+            fi
+            echo
+            if [ -f CHANGELOG.md ]; then
+              tail -n +2 CHANGELOG.md
+            fi
+          } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
       - name: Commit changes
-        uses: actions-x/commit@v6
-        with:
-          message: Add changelog and images description
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md images_description
+          git commit -m "Add changelog and images description" || echo "Nothing to commit"
+          git push
 
       - name: Create pr
-        id: step_create_pr
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_branch: "main"
-          pr_title: "Prepare release ${{ needs.job_compute_release_name.outputs.release_name }}"
+        run: gh pr create --base develop --head "${GITHUB_REF#refs/heads/}" --title "Prepare release ${RELEASE_NAME}" --body "Automated release preparation"

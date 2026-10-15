@@ -1,15 +1,26 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+
+def compileSdkParts = (System.getenv("COMPILE_SDK_VERSION") ?: "35").tokenize('.')
+def targetSdkParts = (System.getenv("TARGET_SDK_VERSION") ?: System.getenv("COMPILE_SDK_VERSION") ?: "35").tokenize('.')
 
 android {
     namespace 'com.fabernovel.testndkapp'
-    compileSdkVersion System.getenv("COMPILE_SDK_VERSION") as Integer
+
+    if (compileSdkParts.size() > 1) {
+        compileSdk {
+            version = release(compileSdkParts[0].toInteger()) {
+                minorApiLevel = compileSdkParts[1].toInteger()
+            }
+        }
+    } else {
+        compileSdk compileSdkParts[0].toInteger()
+    }
     buildToolsVersion System.getenv("BUILD_TOOLS_VERSION")
 
     defaultConfig {
         applicationId "com.fabernovel.testndkapp"
-        minSdkVersion System.getenv("MIN_SDK_VERSION") as Integer
-        targetSdkVersion System.getenv("TARGET_SDK_VERSION") as Integer
+        minSdk System.getenv("MIN_SDK_VERSION").toInteger()
+        targetSdk targetSdkParts[0].toInteger()
         versionCode 1
         versionName "1.0"
 
@@ -38,9 +49,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
-    kotlinOptions {
-        jvmTarget = "21"
-    }
 
     ndkVersion System.getenv("NDK_VERSION")
 
@@ -53,11 +61,10 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.core:core-ktx:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }

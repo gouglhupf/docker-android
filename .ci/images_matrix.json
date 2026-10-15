@@ -1,41 +1,14 @@
 {
     "android_api": [
         {
-            "api": 30,
-            "build_tools": "30.0.3"
-        },
-        {
-            "api": 31,
-            "build_tools": "30.0.3",
-            "__comment": "build-tools 31 are corrupted. Use 30.0.3 instead"
-        },
-        {
-            "api": 32,
-            "build_tools": "32.0.0"
-        },
-        {
-            "api": 33,
-            "build_tools": "33.0.1"
-        },
-        {
-            "api": 34,
-            "build_tools": "34.0.0"
-        },
-        {
-            "api": 35,
-            "build_tools": "35.0.0"
-        },
-        {
-            "api": 36,
-            "build_tools": "36.0.0"
+            "api": "37.2",
+            "build_tools": "37.0.0"
         }
     ],
     "android_ndk": [
-        "--android-ndk",
         ""
     ],
     "gcloud": [
-        "--gcloud",
-        ""
+        "--gcloud"
     ]
 }

@@ -56,9 +56,8 @@ if [ "$gcloud" = true ]; then
 fi
 
 # Setup test app environment variables
-export KOTLIN_VERSION="2.1.10"
-export GRADLE_VERSION="8.10"
-export ANDROID_GRADLE_TOOLS_VERSION="8.7.3"
+export GRADLE_VERSION="9.6.0"
+export ANDROID_GRADLE_TOOLS_VERSION="9.4.0"
 export COMPILE_SDK_VERSION="$android_api"
 export BUILD_TOOLS_VERSION="$android_build_tools"
 export MIN_SDK_VERSION=21
